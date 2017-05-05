@@ -14,7 +14,7 @@ os.environ['MXNET_ENGINE_TYPE']='NaiveEngine' # enable native code debugging
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-ctx = mx.cpu(0)
+ctx = mx.gpu(0)
 
 def main():
     fcnxs = symbol_fcnxs_resnet.get_fcn32s_symbol(numclass=21, workspace_default=1024)
@@ -58,8 +58,8 @@ def main():
         num_epoch           = 50,
         arg_params          = fcnxs_args,
         aux_params          = fcnxs_auxs,
-        learning_rate       = 1e-10,
-        momentum            = 0.99,
+        learning_rate       = 1e-2,
+        momentum            = 0.9,
         wd                  = 0.0005)
     model.fit(
         train_data          = train_dataiter,
