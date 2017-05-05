@@ -25,8 +25,8 @@ def getpallete(num_cls):
 pallete = getpallete(256)
 img = "./person_bicycle.jpg"
 seg = img.replace("jpg", "png")
-model_prefix = "FCN8s_VGG16"
-epoch = 19
+model_prefix = "FCN32s_ResNet"
+epoch = 1
 ctx = mx.gpu(0)
 
 def get_data(img_path):
@@ -47,7 +47,7 @@ def main():
     data_shape = fcnxs_args["data"].shape
     label_shape = (1, data_shape[2]*data_shape[3])
     fcnxs_args["softmax_label"] = mx.nd.empty(label_shape, ctx)
-    exector = fcnxs.bind(ctx, fcnxs_args ,args_grad=None, grad_req="null", aux_states=fcnxs_args, \
+    exector = fcnxs.bind(ctx, fcnxs_args ,args_grad=None, grad_req="null", aux_states=fcnxs_auxs, \
                          group2ctx={'gpu(0)':mx.gpu(0),})
     tic = time.time()
     exector.forward(is_train=False)

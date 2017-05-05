@@ -17,7 +17,7 @@ class Solver(object):
                  optimizer='sgd', **kwargs):
         self.symbol = symbol
         if ctx is None:
-            ctx = mx.cpu()
+            ctx = mx.cpu(0)
         self.ctx = ctx
         self.begin_epoch = begin_epoch
         self.num_epoch = num_epoch
@@ -46,7 +46,7 @@ class Solver(object):
         else:
             self.grad_params = None
         aux_names = self.symbol.list_auxiliary_states()
-        self.aux_params = {k : nd.zeros(s) for k, s in zip(aux_names, aux_shapes)}
+        self.aux_params = {k : mx.nd.zeros(s) for k, s in zip(aux_names, aux_shapes)}
         data_name = train_data.data_name
         label_name = train_data.label_name
         input_names = [data_name, label_name]
@@ -65,31 +65,32 @@ class Solver(object):
                 self.arg_params[label_name] = mx.nd.array(data[label_name].reshape(label_shape[0], \
                     label_shape[1]*label_shape[2]), self.ctx)
                 output_names = self.symbol.list_outputs()
-                self.exector = self.symbol.bind(self.ctx, self.arg_params,
+                self.executor = self.symbol.bind(self.ctx, self.arg_params,
                                 args_grad=self.grad_params,
                                 grad_req=grad_req,
                                 aux_states=self.aux_params)
-                assert len(self.symbol.list_arguments()) == len(self.exector.grad_arrays)
-                update_dict = {name: nd for name, nd in zip(self.symbol.list_arguments(), \
-                    self.exector.grad_arrays) if nd}
+                assert len(self.symbol.list_arguments()) == len(self.executor.grad_arrays)
+                update_dict = {name: nd for name, nd in zip(self.symbol.list_arguments(), self.executor.grad_arrays) if nd is not None}
+                # update_dict = {name: nd for name, nd in zip(self.symbol.list_arguments(), self.executor.grad_arrays) }
                 output_dict = {}
                 output_buff = {}
-                for key, arr in zip(self.symbol.list_outputs(), self.exector.outputs):
+                for key, arr in zip(self.symbol.list_outputs(), self.executor.outputs):
                     output_dict[key] = arr
                     output_buff[key] = mx.nd.empty(arr.shape, ctx=mx.cpu())
-                self.exector.forward(is_train=True)
+                    # output_buff[key] = mx.nd.empty(arr.shape, ctx=self.ctx)
+                self.executor.forward(is_train=True)
                 for key in output_dict:
                     output_dict[key].copyto(output_buff[key])
-                self.exector.backward()
+                self.executor.backward()
                 for key, arr in update_dict.items():
                     if key != "bigscore_weight":
                         self.updater(key, arr, self.arg_params[key])
-                pred_shape = self.exector.outputs[0].shape
+                pred_shape = self.executor.outputs[0].shape
                 label = mx.nd.array(data[label_name].reshape(label_shape[0], label_shape[1]*label_shape[2]))
                 pred = mx.nd.array(output_buff["softmax_output"].asnumpy().reshape(pred_shape[0], \
                     pred_shape[1], pred_shape[2]*pred_shape[3]))
                 eval_metric.update([label], [pred])
-                self.exector.outputs[0].wait_to_read()
+                self.executor.outputs[0].wait_to_read()
                 batch_end_params = BatchEndParam(epoch=epoch, nbatch=nbatch, eval_metric=eval_metric)
                 batch_end_callback(batch_end_params)
             if epoch_end_callback is not None:
@@ -108,19 +109,19 @@ class Solver(object):
                     self.arg_params[data_name] = mx.nd.array(data[data_name], self.ctx)
                     self.arg_params[label_name] = mx.nd.array(data[label_name].reshape(label_shape[0], \
                         label_shape[1]*label_shape[2]), self.ctx)
-                    exector = self.symbol.bind(self.ctx, self.arg_params,
+                    executor = self.symbol.bind(self.ctx, self.arg_params,
                                     args_grad=self.grad_params,
                                     grad_req=grad_req,
                                     aux_states=self.aux_params)
-                    cpu_output_array = mx.nd.zeros(exector.outputs[0].shape)
-                    exector.forward(is_train=False)
-                    exector.outputs[0].copyto(cpu_output_array)
+                    cpu_output_array = mx.nd.zeros(executor.outputs[0].shape)
+                    executor.forward(is_train=False)
+                    executor.outputs[0].copyto(cpu_output_array)
                     pred_shape = cpu_output_array.shape
                     label = mx.nd.array(data[label_name].reshape(label_shape[0], \
                         label_shape[1]*label_shape[2]))
                     pred = mx.nd.array(cpu_output_array.asnumpy().reshape(pred_shape[0], \
                         pred_shape[1], pred_shape[2]*pred_shape[3]))
                     eval_metric.update([label], [pred])
-                    exector.outputs[0].wait_to_read()
+                    executor.outputs[0].wait_to_read()
             name, value = eval_metric.get()
             logger.info('batch[%d] Validation-%s=%f', nbatch, name, value)
