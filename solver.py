@@ -70,8 +70,7 @@ class Solver(object):
                                 grad_req=grad_req,
                                 aux_states=self.aux_params)
                 assert len(self.symbol.list_arguments()) == len(self.exector.grad_arrays)
-                update_dict = {name: nd for name, nd in zip(self.symbol.list_arguments(), \
-                    self.exector.grad_arrays) if nd}
+                update_dict = {name: nd for name, nd in zip(self.symbol.list_arguments(), self.exector.grad_arrays) if nd is not None}
                 output_dict = {}
                 output_buff = {}
                 for key, arr in zip(self.symbol.list_outputs(), self.exector.outputs):
