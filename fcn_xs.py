@@ -14,7 +14,7 @@ os.environ['MXNET_ENGINE_TYPE']='NaiveEngine' # enable native code debugging
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-ctx = mx.gpu(0)
+ctx = mx.cpu(0)
 
 def main():
     fcnxs = symbol_fcnxs_resnet.get_fcn32s_symbol(numclass=21, workspace_default=1024)

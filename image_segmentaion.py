@@ -3,6 +3,7 @@ import numpy as np
 import mxnet as mx
 from PIL import Image
 import time
+from pprint import pprint
 
 def getpallete(num_cls):
     # this function is to get the colormap for visualizing the segmentation mask
@@ -43,6 +44,10 @@ def get_data(img_path):
 
 def main():
     fcnxs, fcnxs_args, fcnxs_auxs = mx.model.load_checkpoint(model_prefix, epoch)
+    fcnxs_args = {key: val.as_in_context(ctx) for key, val in fcnxs_args.items()}
+    fcnxs_auxs = {key: val.as_in_context(ctx) for key, val in fcnxs_auxs.items()}
+    pprint(fcnxs_args)
+    pprint(fcnxs_auxs)
     fcnxs_args["data"] = mx.nd.array(get_data(img), ctx)
     data_shape = fcnxs_args["data"].shape
     label_shape = (1, data_shape[2]*data_shape[3])
