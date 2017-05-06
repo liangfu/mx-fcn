@@ -10,11 +10,11 @@ from data import FileIter
 from solver import Solver
 from pprint import pprint
 
-os.environ['MXNET_ENGINE_TYPE']='NaiveEngine' # enable native code debugging
+# os.environ['MXNET_ENGINE_TYPE']='NaiveEngine' # enable native code debugging
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-ctx = mx.gpu(0)
+ctx = mx.cpu(0)
 
 def main():
     fcnxs = symbol_fcnxs_resnet.get_fcn32s_symbol(numclass=21, workspace_default=1024)
@@ -36,13 +36,13 @@ def main():
         elif args.init_type == "fcnxs":
             fcnxs_args, fcnxs_auxs = init_fcnxs.init_from_fcnxs(ctx, fcnxs, fcnxs_args, fcnxs_auxs)
     train_dataiter = FileIter(
-        root_dir             = "./VOC2012",
+        root_dir             = "./VOC2007",
         flist_name           = "train.lst",
         # cut_off_size         = 400,
         rgb_mean             = (123.68, 116.779, 103.939),
         )
     val_dataiter = FileIter(
-        root_dir             = "./VOC2012",
+        root_dir             = "./VOC2007",
         flist_name           = "val.lst",
         rgb_mean             = (123.68, 116.779, 103.939),
         )

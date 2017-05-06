@@ -60,6 +60,7 @@ def init_from_resnet(ctx, fcnxs_symbol, resnet_args, resnet_auxs):
     data_shape=(1,3,500,500)
     arg_names = fcnxs_symbol.list_arguments()
     arg_shapes, _, _ = fcnxs_symbol.infer_shape(data=data_shape)
+    pprint(fcnxs_symbol.list_arguments())
     pprint(dict(zip(arg_names,arg_shapes)))
     rest_params = dict([(x[0], mx.nd.zeros(x[1], ctx)) for x in zip(arg_names, arg_shapes)
             if x[0] in ['score_weight', 'score_bias', 'score_pool4_weight', 'score_pool4_bias', \
