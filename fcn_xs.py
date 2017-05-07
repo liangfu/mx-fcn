@@ -51,6 +51,10 @@ def main():
     pprint(fcnxs_args)
     pprint(fcnxs_auxs)
 
+    # network visualization
+    # dot = mx.viz.plot_network(fcnxs, shape={'data':(1,3,500,500)})
+    # dot.view()
+
     model = Solver(
         ctx                 = ctx,
         symbol              = fcnxs,
