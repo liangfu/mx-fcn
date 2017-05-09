@@ -14,11 +14,11 @@ from pprint import pprint
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-ctx = mx.cpu(0)
+ctx = mx.gpu(0)
 
 def main():
     fcnxs = symbol_fcnxs_resnet.get_fcn32s_symbol(numclass=21, workspace_default=1024)
-    pprint(fcnxs.list_arguments())
+    # pprint(fcnxs.list_arguments())
     fcnxs_model_prefix = "FCN32s_ResNet"
     if args.model == "fcn16s":
         fcnxs = symbol_fcnxs.get_fcn16s_symbol(numclass=21, workspace_default=1024)
@@ -48,8 +48,8 @@ def main():
         )
     fcnxs_args = {key: val.as_in_context(ctx) for key, val in fcnxs_args.items()}
     fcnxs_auxs = {key: val.as_in_context(ctx) for key, val in fcnxs_auxs.items()}
-    pprint(fcnxs_args)
-    pprint(fcnxs_auxs)
+    # pprint(fcnxs_args)
+    # pprint(fcnxs_auxs)
 
     # network visualization
     # dot = mx.viz.plot_network(fcnxs, shape={'data':(1,3,500,500)})
@@ -59,12 +59,12 @@ def main():
         ctx                 = ctx,
         symbol              = fcnxs,
         begin_epoch         = 0,
-        num_epoch           = 50,
+        num_epoch           = 50, # 50 epoch
         arg_params          = fcnxs_args,
         aux_params          = fcnxs_auxs,
-        learning_rate       = 1e-2,
-        momentum            = 0.9,
-        wd                  = 0.0005)
+        learning_rate       = 1e-2, # 1e-5
+        momentum            = 0.9,  # 0.99
+        wd                  = 0.0005) # 0.0005
     model.fit(
         train_data          = train_dataiter,
         eval_data           = val_dataiter,

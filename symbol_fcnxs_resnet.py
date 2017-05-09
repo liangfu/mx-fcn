@@ -5,7 +5,7 @@ import mxnet as mx
 from symbol_fcnxs_vgg16 import offset
 
 eps = 2e-5
-use_global_stats = True
+use_global_stats = False #True
 
 # workspace = 512
 # res_deps = {'50': (3, 4, 6, 3), '101': (3, 4, 23, 3), '152': (3, 8, 36, 3), '200': (3, 24, 36, 3)}

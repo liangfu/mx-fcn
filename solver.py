@@ -77,9 +77,26 @@ class Solver(object):
                     output_dict[key] = arr
                     output_buff[key] = mx.nd.empty(arr.shape, ctx=mx.cpu())
                     # output_buff[key] = mx.nd.empty(arr.shape, ctx=self.ctx)
+
+                import time
+                def stat_helper(name, array):
+                    """wrapper for executor callback"""
+                    import ctypes
+                    from mxnet.ndarray import NDArray
+                    from mxnet.base import NDArrayHandle, py_str
+                    array = ctypes.cast(array, NDArrayHandle)
+                    array = NDArray(array, writable=False).asnumpy()
+                    # array.wait_to_read()
+                    print (name, array.shape, np.mean(array), np.std(array), ('%.1fms' % (float(time.time()-stat_helper.start_time)*1000)))
+                    # print (name, array.shape, ('%.1fms' % (float(time.time()-stat_helper.start_time)*1000)))
+                    stat_helper.start_time=time.time()
+                stat_helper.start_time=float(time.time())
+                # self.executor.set_monitor_callback(stat_helper)
+                    
                 self.executor.forward(is_train=True)
                 for key in output_dict:
                     output_dict[key].copyto(output_buff[key])
+                
                 self.executor.backward()
                 for key, arr in update_dict.items():
                     if key != "bigscore_weight":

@@ -5,6 +5,7 @@ import numpy as np
 import sys, os
 from mxnet.io import DataIter
 from PIL import Image
+import cv2
 
 class FileIter(DataIter):
     """FileIter object in fcn-xs example. Taking a file list file to get dataiter.
@@ -62,8 +63,8 @@ class FileIter(DataIter):
             max_hw = max(img.shape[0], img.shape[1])
             min_hw = min(img.shape[0], img.shape[1])
             if min_hw > self.cut_off_size:
-                rand_start_max = round(np.random.uniform(0, max_hw - self.cut_off_size - 1))
-                rand_start_min = round(np.random.uniform(0, min_hw - self.cut_off_size - 1))
+                rand_start_max = int(round(np.random.uniform(0, max_hw - self.cut_off_size - 1)))
+                rand_start_min = int(round(np.random.uniform(0, min_hw - self.cut_off_size - 1)))
                 if img.shape[0] == max_hw :
                     img = img[rand_start_max : rand_start_max + self.cut_off_size, rand_start_min : rand_start_min + self.cut_off_size]
                     label = label[rand_start_max : rand_start_max + self.cut_off_size, rand_start_min : rand_start_min + self.cut_off_size]
@@ -71,7 +72,7 @@ class FileIter(DataIter):
                     img = img[rand_start_min : rand_start_min + self.cut_off_size, rand_start_max : rand_start_max + self.cut_off_size]
                     label = label[rand_start_min : rand_start_min + self.cut_off_size, rand_start_max : rand_start_max + self.cut_off_size]
             elif max_hw > self.cut_off_size:
-                rand_start = round(np.random.uniform(0, max_hw - min_hw - 1))
+                rand_start = int(round(np.random.uniform(0, max_hw - min_hw - 1)))
                 if img.shape[0] == max_hw :
                     img = img[rand_start : rand_start + min_hw, :]
                     label = label[rand_start : rand_start + min_hw, :]
@@ -80,6 +81,9 @@ class FileIter(DataIter):
                     label = label[:, rand_start : rand_start + min_hw]
         reshaped_mean = self.mean.reshape(1, 1, 3)
         img = img - reshaped_mean
+
+        # print((np.mean(img),np.std(img)))
+        
         img = np.swapaxes(img, 0, 2)
         img = np.swapaxes(img, 1, 2)  # (c, h, w)
         img = np.expand_dims(img, axis=0)  # (1, c, h, w)
@@ -116,6 +120,10 @@ class FileIter(DataIter):
         """return one dict which contains "data" and "label" """
         if self.iter_next():
             self.data, self.label = self._read()
+            # uncomment the following lines to visualize `data` and `label`
+            # cv2.imshow('softmax_label',np.squeeze(self.label[0][1],axis=(0,)).astype(np.uint8))
+            # cv2.imshow('data',np.squeeze(self.data[0][1],axis=(0,)).astype(np.uint8))
+            # if (cv2.waitKey()&0xff)==27: exit(0)
             return {self.data_name  :  self.data[0][1],
                     self.label_name :  self.label[0][1]}
         else:

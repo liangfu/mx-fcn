@@ -60,14 +60,15 @@ def init_from_resnet(ctx, fcnxs_symbol, resnet_args, resnet_auxs):
     data_shape=(1,3,500,500)
     arg_names = fcnxs_symbol.list_arguments()
     arg_shapes, _, _ = fcnxs_symbol.infer_shape(data=data_shape)
-    pprint(fcnxs_symbol.list_arguments())
-    pprint(dict(zip(arg_names,arg_shapes)))
+    # pprint(fcnxs_symbol.list_arguments())
+    # pprint(dict(zip(arg_names,arg_shapes)))
     rest_params = dict([(x[0], mx.nd.zeros(x[1], ctx)) for x in zip(arg_names, arg_shapes)
             if x[0] in ['score_weight', 'score_bias', 'score_pool4_weight', 'score_pool4_bias', \
                         'score_pool3_weight', 'score_pool3_bias']])
     fcnxs_args.update(rest_params)
     deconv_params = dict([(x[0], x[1]) for x in zip(arg_names, arg_shapes)
             if x[0] in ["bigscore_weight", 'score2_weight', 'score4_weight']])
+    # pprint([(key,fcnxs_args[key]) for key in fcnxs_args.keys()])
     for k, v in deconv_params.items():
         filt = upsample_filt(v[3])
         initw = np.zeros(v)
