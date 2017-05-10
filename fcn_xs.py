@@ -9,11 +9,18 @@ import init_fcnxs
 from data import FileIter
 from solver import Solver
 from pprint import pprint
+import time
 
 # os.environ['MXNET_ENGINE_TYPE']='NaiveEngine' # enable native code debugging
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+fh = logging.FileHandler(time.strftime('%F-%T',time.localtime()).replace(':','-')+'.log')
+fh.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+logger.addHandler(fh)
+logger.addHandler(ch)
+
 ctx = mx.gpu(0)
 
 def main():
@@ -21,10 +28,10 @@ def main():
     # pprint(fcnxs.list_arguments())
     fcnxs_model_prefix = "FCN32s_ResNet"
     if args.model == "fcn16s":
-        fcnxs = symbol_fcnxs.get_fcn16s_symbol(numclass=21, workspace_default=1024)
+        fcnxs = symbol_fcnxs_resnet.get_fcn16s_symbol(numclass=21, workspace_default=1024)
         fcnxs_model_prefix = "FCN16s_ResNet"
     elif args.model == "fcn8s":
-        fcnxs = symbol_fcnxs.get_fcn8s_symbol(numclass=21, workspace_default=1024)
+        fcnxs = symbol_fcnxs_resnet.get_fcn8s_symbol(numclass=21, workspace_default=1024)
         fcnxs_model_prefix = "FCN8s_ResNet"
     arg_names = fcnxs.list_arguments()
     _, fcnxs_args, fcnxs_auxs = mx.model.load_checkpoint(args.prefix, args.epoch)
@@ -36,13 +43,13 @@ def main():
         elif args.init_type == "fcnxs":
             fcnxs_args, fcnxs_auxs = init_fcnxs.init_from_fcnxs(ctx, fcnxs, fcnxs_args, fcnxs_auxs)
     train_dataiter = FileIter(
-        root_dir             = "./VOC2007",
+        root_dir             = "./VOC2012",
         flist_name           = "train.lst",
         # cut_off_size         = 400,
         rgb_mean             = (123.68, 116.779, 103.939),
         )
     val_dataiter = FileIter(
-        root_dir             = "./VOC2007",
+        root_dir             = "./VOC2012",
         flist_name           = "val.lst",
         rgb_mean             = (123.68, 116.779, 103.939),
         )
@@ -59,10 +66,10 @@ def main():
         ctx                 = ctx,
         symbol              = fcnxs,
         begin_epoch         = 0,
-        num_epoch           = 50, # 50 epoch
+        num_epoch           = 32, # 50 epoch
         arg_params          = fcnxs_args,
         aux_params          = fcnxs_auxs,
-        learning_rate       = 1e-2, # 1e-5
+        learning_rate       = 1e-3, # 1e-5
         momentum            = 0.9,  # 0.99
         wd                  = 0.0005) # 0.0005
     model.fit(
@@ -73,16 +80,12 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Convert vgg16 model to vgg16fc model.')
-    parser.add_argument('--model', default='fcnxs',
+    parser.add_argument('--model', default='fcn16s', # fcnxs
         help='The type of fcn-xs model, e.g. fcnxs, fcn16s, fcn8s.')
-    # parser.add_argument('--prefix', default='VGG_FC_ILSVRC_16_layers',
-    #     help='The prefix(include path) of vgg16 model with mxnet format.')
     parser.add_argument('--prefix', default='ResNet_ILSVRC_18_layers',
         help='The prefix(include path) of resnet model with mxnet format.')
     parser.add_argument('--epoch', type=int, default=0,
         help='The epoch number of vgg16 model.')
-    # parser.add_argument('--init-type', default="vgg16",
-    #     help='the init type of fcn-xs model, e.g. vgg16, fcnxs')
     parser.add_argument('--init-type', default="resnet",
           help='the init type of fcn-xs model, e.g. resnet, vgg16, fcnxs')
     parser.add_argument('--retrain', action='store_true', default=False,

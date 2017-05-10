@@ -7,6 +7,7 @@ from collections import namedtuple
 from mxnet import optimizer as opt
 from mxnet.optimizer import get_updater
 from mxnet import metric
+from pprint import pprint
 
 # Parameter to pass to batch_end_callback
 BatchEndParam = namedtuple('BatchEndParams', ['epoch', 'nbatch', 'eval_metric'])
@@ -36,6 +37,7 @@ class Solver(object):
         if logger is None:
             logger = logging
         logging.info('Start training with %s', str(self.ctx))
+        logging.info(str(self.kwargs))
         arg_shapes, out_shapes, aux_shapes = self.symbol.infer_shape(data=train_data.provide_data[0][1])
         arg_names = self.symbol.list_arguments()
         if grad_req != 'null':
@@ -96,7 +98,9 @@ class Solver(object):
                 self.executor.forward(is_train=True)
                 for key in output_dict:
                     output_dict[key].copyto(output_buff[key])
-                
+
+                # exit(0) # for debugging forward pass only
+                    
                 self.executor.backward()
                 for key, arr in update_dict.items():
                     if key != "bigscore_weight":
@@ -141,3 +145,5 @@ class Solver(object):
                     executor.outputs[0].wait_to_read()
             name, value = eval_metric.get()
             logger.info('batch[%d] Validation-%s=%f', nbatch, name, value)
+
+

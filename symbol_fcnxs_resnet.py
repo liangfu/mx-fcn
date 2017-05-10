@@ -48,11 +48,13 @@ def get_resnet_conv(data):
     unit = residual_unit(data=pool0, num_filter=filter_list[0], stride=(1, 1), dim_match=False, name='stage1_unit1')
     for i in range(2, units[0] + 1):
         unit = residual_unit(data=unit, num_filter=filter_list[0], stride=(1, 1), dim_match=True, name='stage1_unit%s' % i)
+    res3 = unit
 
     # res3
     unit = residual_unit(data=unit, num_filter=filter_list[1], stride=(2, 2), dim_match=False, name='stage2_unit1')
     for i in range(2, units[1] + 1):
         unit = residual_unit(data=unit, num_filter=filter_list[1], stride=(1, 1), dim_match=True, name='stage2_unit%s' % i)
+    res4 = unit
 
     # res4
     unit = residual_unit(data=unit, num_filter=filter_list[2], stride=(2, 2), dim_match=False, name='stage3_unit1')
@@ -68,7 +70,7 @@ def get_resnet_conv(data):
     # relu1 = mx.sym.Activation(data=bn1, act_type='relu', name='relu1')
     # pool1 = mx.symbol.Pooling(data=relu1, global_pool=True, kernel=(7, 7), pool_type='avg', name='pool1')
 
-    return unit
+    return res3, res4, unit
 
 # 
 # def get_resnet_train(num_classes=config.NUM_CLASSES, num_anchors=config.NUM_ANCHORS):
@@ -264,9 +266,49 @@ def get_fcn32s_symbol(numclass=21, workspace_default=1024):
     data = mx.symbol.Variable(name="data")
     # pool3 = resnet_pool3(data, workspace_default)
     # pool4 = resnet_pool4(pool3, workspace_default)
-    conv_feat = get_resnet_conv(data)
+    res3, res4, conv_feat = get_resnet_conv(data)
     score = resnet_score(conv_feat, numclass, workspace_default)
     softmax = fcnxs_score(score, data, offset()["fcn32s_upscore"], (64,64), (32,32), numclass, workspace_default)
     return softmax
 
+def get_fcn16s_symbol(numclass=21, workspace_default=1024):
+    data = mx.symbol.Variable(name="data")
+    # pool3 = vgg16_pool3(data, workspace_default)
+    # pool4 = vgg16_pool4(pool3, workspace_default)
+    # score = vgg16_score(pool4, numclass, workspace_default)
+    res3, res4, conv_feat = get_resnet_conv(data)
+    score = resnet_score(conv_feat, numclass, workspace_default)
+    # score 2X
+    score2 = mx.symbol.Deconvolution(data=score, kernel=(4, 4), stride=(2, 2), num_filter=numclass,
+                 adj=(1, 1), workspace=workspace_default, name="score2")  # 2X
+    score_pool4 = mx.symbol.Convolution(data=res4, kernel=(1, 1), num_filter=numclass,
+                 workspace=workspace_default, name="score_pool4")
+    score_pool4c = mx.symbol.Crop(*[score_pool4, score2], offset=offset()["score_pool4c"], name="score_pool4c")
+    score_fused = score2 + score_pool4c
+    softmax = fcnxs_score(score_fused, data, offset()["fcn16s_upscore"], (32, 32), (16, 16), numclass, workspace_default)
+    return softmax
+
+def get_fcn8s_symbol(numclass=21, workspace_default=1024):
+    data = mx.symbol.Variable(name="data")
+    # pool3 = vgg16_pool3(data, workspace_default)
+    # pool4 = vgg16_pool4(pool3, workspace_default)
+    # score = vgg16_score(pool4, numclass, workspace_default)
+    res3, res4, conv_feat = get_resnet_conv(data)
+    score = resnet_score(conv_feat, numclass, workspace_default)
+    # score 2X
+    score2 = mx.symbol.Deconvolution(data=score, kernel=(4, 4), stride=(2, 2),num_filter=numclass,
+                adj=(1, 1), workspace=workspace_default, name="score2")  # 2X
+    score_pool4 = mx.symbol.Convolution(data=res4, kernel=(1, 1), num_filter=numclass,
+                workspace=workspace_default, name="score_pool4")
+    score_pool4c = mx.symbol.Crop(*[score_pool4, score2], offset=offset()["score_pool4c"], name="score_pool4c")
+    score_fused = score2 + score_pool4c
+    # score 4X
+    score4 = mx.symbol.Deconvolution(data=score_fused, kernel=(4, 4), stride=(2, 2),num_filter=numclass,
+                adj=(1, 1), workspace=workspace_default, name="score4") # 4X
+    score_pool3 = mx.symbol.Convolution(data=res3, kernel=(1, 1), num_filter=numclass,
+                workspace=workspace_default, name="score_pool3")
+    score_pool3c = mx.symbol.Crop(*[score_pool3, score4], offset=offset()["score_pool3c"], name="score_pool3c")
+    score_final = score4 + score_pool3c
+    softmax = fcnxs_score(score_final, data, offset()["fcn8s_upscore"], (16, 16), (8, 8), numclass, workspace_default)
+    return softmax
 
