@@ -48,18 +48,18 @@ def get_resnet_conv(data):
     unit = residual_unit(data=pool0, num_filter=filter_list[0], stride=(1, 1), dim_match=False, name='stage1_unit1')
     for i in range(2, units[0] + 1):
         unit = residual_unit(data=unit, num_filter=filter_list[0], stride=(1, 1), dim_match=True, name='stage1_unit%s' % i)
-    res3 = unit
 
     # res3
     unit = residual_unit(data=unit, num_filter=filter_list[1], stride=(2, 2), dim_match=False, name='stage2_unit1')
     for i in range(2, units[1] + 1):
         unit = residual_unit(data=unit, num_filter=filter_list[1], stride=(1, 1), dim_match=True, name='stage2_unit%s' % i)
-    res4 = unit
+    res3 = unit
 
     # res4
     unit = residual_unit(data=unit, num_filter=filter_list[2], stride=(2, 2), dim_match=False, name='stage3_unit1')
     for i in range(2, units[2] + 1):
         unit = residual_unit(data=unit, num_filter=filter_list[2], stride=(1, 1), dim_match=True, name='stage3_unit%s' % i)
+    res4 = unit
 
     # res5
     unit = residual_unit(data=unit, num_filter=filter_list[3], stride=(2, 2), dim_match=False, name='stage4_unit1')
@@ -279,12 +279,15 @@ def get_fcn16s_symbol(numclass=21, workspace_default=1024):
     res3, res4, conv_feat = get_resnet_conv(data)
     score = resnet_score(conv_feat, numclass, workspace_default)
     # score 2X
-    score2 = mx.symbol.Deconvolution(data=score, kernel=(4, 4), stride=(2, 2), num_filter=numclass,
-                 adj=(1, 1), workspace=workspace_default, name="score2")  # 2X
-    score_pool4 = mx.symbol.Convolution(data=res4, kernel=(1, 1), num_filter=numclass,
+    score2 = mx.symbol.Deconvolution(data=score, kernel=(3, 3), stride=(2, 2), pad=(1, 1), num_filter=numclass,
+                                     adj=(1, 1),
+                                     workspace=workspace_default, name="score2")  # 2X
+    score_pool4 = mx.symbol.Convolution(data=res4, kernel=(1, 1), stride=(1, 1), pad=(1, 1), num_filter=numclass,
                  workspace=workspace_default, name="score_pool4")
-    score_pool4c = mx.symbol.Crop(*[score_pool4, score2], offset=offset()["score_pool4c"], name="score_pool4c")
-    score_fused = score2 + score_pool4c
+    # score_pool4c = mx.symbol.Crop(*[score_pool4, score2], offset=offset()["score_pool4c"], name="score_pool4c")
+    score_pool4c = mx.symbol.Crop(*[score_pool4, score2], offset=(0,0), name="score_pool4c")
+    # score_fused = score2 + score_pool4c
+    score_fused = mx.sym.ElementWiseSum(*[score2, score_pool4c], name='score_fused')
     softmax = fcnxs_score(score_fused, data, offset()["fcn16s_upscore"], (32, 32), (16, 16), numclass, workspace_default)
     return softmax
 

@@ -75,7 +75,7 @@ def main():
     model.fit(
         train_data          = train_dataiter,
         eval_data           = val_dataiter,
-        batch_end_callback  = mx.callback.Speedometer(1, 10),
+        batch_end_callback  = mx.callback.Speedometer(1, 50),
         epoch_end_callback  = mx.callback.do_checkpoint(fcnxs_model_prefix))
 
 if __name__ == "__main__":
