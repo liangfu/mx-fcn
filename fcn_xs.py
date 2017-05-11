@@ -14,7 +14,7 @@ import time
 # os.environ['MXNET_ENGINE_TYPE']='NaiveEngine' # enable native code debugging
 
 logger = logging.getLogger()
-fh = logging.FileHandler(time.strftime('%F-%T',time.localtime()).replace(':','-')+'.log')
+fh = logging.FileHandler(os.path.join('log',time.strftime('%F-%T',time.localtime()).replace(':','-')+'.log'))
 fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
@@ -26,13 +26,13 @@ ctx = mx.gpu(0)
 def main():
     fcnxs = symbol_fcnxs_resnet.get_fcn32s_symbol(numclass=21, workspace_default=1024)
     # pprint(fcnxs.list_arguments())
-    fcnxs_model_prefix = "FCN32s_ResNet"
+    fcnxs_model_prefix = os.path.join("models","FCN32s_ResNet")
     if args.model == "fcn16s":
         fcnxs = symbol_fcnxs_resnet.get_fcn16s_symbol(numclass=21, workspace_default=1024)
-        fcnxs_model_prefix = "FCN16s_ResNet"
+        fcnxs_model_prefix = os.path.join("models","FCN16s_ResNet")
     elif args.model == "fcn8s":
         fcnxs = symbol_fcnxs_resnet.get_fcn8s_symbol(numclass=21, workspace_default=1024)
-        fcnxs_model_prefix = "FCN8s_ResNet"
+        fcnxs_model_prefix = os.path.join("models","FCN8s_ResNet")
     arg_names = fcnxs.list_arguments()
     _, fcnxs_args, fcnxs_auxs = mx.model.load_checkpoint(args.prefix, args.epoch)
     if not args.retrain:
@@ -65,11 +65,11 @@ def main():
     model = Solver(
         ctx                 = ctx,
         symbol              = fcnxs,
-        begin_epoch         = 0,
+        begin_epoch         = 13,
         num_epoch           = 32, # 50 epoch
         arg_params          = fcnxs_args,
         aux_params          = fcnxs_auxs,
-        learning_rate       = 1e-3, # 1e-5
+        learning_rate       = 2e-4, # 1e-5
         momentum            = 0.9,  # 0.99
         wd                  = 0.0005) # 0.0005
     model.fit(

@@ -1,6 +1,7 @@
 ## train fcn-32s model
 # python -u fcn_xs.py --model=fcn32s --prefix=VGG16_ILSVRC_18_layers --epoch=0 --init-type=vgg16
-python -u fcn_xs.py --model=fcn32s --prefix=ResNet_ILSVRC_18_layers --epoch=0 --init-type=resnet
+# python -u fcn_xs.py --model=fcn32s --prefix=models/ResNet_ILSVRC_18_layers --epoch=0 --init-type=resnet
+python -u fcn_xs.py --model=fcn32s --prefix=models/FCN32s_ResNet --epoch=12 --init-type=resnet --retrain
 
 ## train fcn-16s model
 # python -u fcn_xs.py --model=fcn16s --prefix=FCN32s_VGG16 --epoch=31 --init-type=fcnxs
