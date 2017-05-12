@@ -107,7 +107,7 @@ class FileIter(DataIter):
         return [(k, tuple([1] + list(v.shape[1:]))) for k, v in self.label]
 
     def get_batch_size(self):
-        return 1
+        return 32
 
     def reset(self):
         self.cursor = -1

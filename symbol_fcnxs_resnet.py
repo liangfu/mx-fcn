@@ -279,8 +279,7 @@ def get_fcn16s_symbol(numclass=21, workspace_default=1024):
     res3, res4, conv_feat = get_resnet_conv(data)
     score = resnet_score(conv_feat, numclass, workspace_default)
     # score 2X
-    score2 = mx.symbol.Deconvolution(data=score, kernel=(3, 3), stride=(2, 2), pad=(1, 1), num_filter=numclass,
-                                     adj=(1, 1),
+    score2 = mx.symbol.Deconvolution(data=score, kernel=(7,7), stride=(2,2), pad=(3,3), adj=(1,1), num_filter=numclass,
                                      workspace=workspace_default, name="score2")  # 2X
     score_pool4 = mx.symbol.Convolution(data=res4, kernel=(1, 1), stride=(1, 1), pad=(1, 1), num_filter=numclass,
                  workspace=workspace_default, name="score_pool4")
@@ -299,19 +298,24 @@ def get_fcn8s_symbol(numclass=21, workspace_default=1024):
     res3, res4, conv_feat = get_resnet_conv(data)
     score = resnet_score(conv_feat, numclass, workspace_default)
     # score 2X
-    score2 = mx.symbol.Deconvolution(data=score, kernel=(4, 4), stride=(2, 2),num_filter=numclass,
-                adj=(1, 1), workspace=workspace_default, name="score2")  # 2X
-    score_pool4 = mx.symbol.Convolution(data=res4, kernel=(1, 1), num_filter=numclass,
+    score2 = mx.symbol.Deconvolution(data=score, kernel=(7,7), stride=(2,2), pad=(3,3), adj=(1,1), num_filter=numclass,
+                workspace=workspace_default, name="score2")  # 2X
+    score_pool4 = mx.symbol.Convolution(data=res4, kernel=(1, 1), stride=(1, 1), pad=(1, 1), num_filter=numclass,
                 workspace=workspace_default, name="score_pool4")
-    score_pool4c = mx.symbol.Crop(*[score_pool4, score2], offset=offset()["score_pool4c"], name="score_pool4c")
-    score_fused = score2 + score_pool4c
+    # score_pool4c = mx.symbol.Crop(*[score_pool4, score2], offset=offset()["score_pool4c"], name="score_pool4c")
+    score_pool4c = mx.symbol.Crop(*[score_pool4, score2], offset=(0,0), name="score_pool4c")
+    # score_fused = score2 + score_pool4c
+    score_fused = mx.sym.ElementWiseSum(*[score2, score_pool4c], name='score_fused')
     # score 4X
-    score4 = mx.symbol.Deconvolution(data=score_fused, kernel=(4, 4), stride=(2, 2),num_filter=numclass,
-                adj=(1, 1), workspace=workspace_default, name="score4") # 4X
-    score_pool3 = mx.symbol.Convolution(data=res3, kernel=(1, 1), num_filter=numclass,
+    score4 = mx.symbol.Deconvolution(data=score_fused, kernel=(7,7), stride=(2,2), pad=(3,3), adj=(1,1), num_filter=numclass,
+                workspace=workspace_default, name="score4") # 4X
+    score_pool3 = mx.symbol.Convolution(data=res3, kernel=(1,1), stride=(1,1), pad=(2,2), num_filter=numclass,
                 workspace=workspace_default, name="score_pool3")
-    score_pool3c = mx.symbol.Crop(*[score_pool3, score4], offset=offset()["score_pool3c"], name="score_pool3c")
-    score_final = score4 + score_pool3c
-    softmax = fcnxs_score(score_final, data, offset()["fcn8s_upscore"], (16, 16), (8, 8), numclass, workspace_default)
+    # score_pool3c = mx.symbol.Crop(*[score_pool3, score4], offset=offset()["score_pool3c"], name="score_pool3c")
+    score_pool3c = mx.symbol.Crop(*[score_pool3, score4], offset=(0,0), name="score_pool3c")
+    # score_final = score4 + score_pool3c
+    score_final = mx.sym.ElementWiseSum(*[score4, score_pool3c], name='score_final')
+    # softmax = fcnxs_score(score_final, data, offset()["fcn8s_upscore"], (16, 16), (8, 8), numclass, workspace_default)
+    softmax = fcnxs_score(score_final, data, (0,0), (16, 16), (8, 8), numclass, workspace_default)
     return softmax
 

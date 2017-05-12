@@ -65,12 +65,12 @@ def main():
     model = Solver(
         ctx                 = ctx,
         symbol              = fcnxs,
-        begin_epoch         = 13,
-        num_epoch           = 32, # 50 epoch
+        begin_epoch         = args.epoch if args.retrain else 0,
+        num_epoch           = 50, # 50 epoch
         arg_params          = fcnxs_args,
         aux_params          = fcnxs_auxs,
-        learning_rate       = 2e-4, # 1e-5
-        momentum            = 0.9,  # 0.99
+        learning_rate       = 1e-3, # 1e-5
+        momentum            = 0.99,  # 0.99
         wd                  = 0.0005) # 0.0005
     model.fit(
         train_data          = train_dataiter,

@@ -25,9 +25,10 @@ def getpallete(num_cls):
 
 pallete = getpallete(256)
 img = "./person_bicycle.jpg"
+img = "./000129.jpg"
 seg = img.replace("jpg", "png")
 model_prefix = "models/FCN32s_ResNet"
-epoch = 23
+epoch = 24
 ctx = mx.gpu(0)
 
 def get_data(img_path):
