@@ -6,6 +6,7 @@ import sys, os
 from mxnet.io import DataIter
 from PIL import Image
 import cv2
+import random
 
 class FileIter(DataIter):
     """FileIter object in fcn-xs example. Taking a file list file to get dataiter.
@@ -42,12 +43,16 @@ class FileIter(DataIter):
 
         self.num_data = len(open(self.flist_name, 'r').readlines())
         self.f = open(self.flist_name, 'r')
-        self.data, self.label = self._read()
+        self.cached_table = [tuple(line.strip('\n').split('\t')) for line in self.f.readlines()]
+        random.shuffle(self.cached_table)
+        self.f = None
         self.cursor = -1
+        self.data, self.label = self._read()
 
     def _read(self):
         """get two list, each list contains two elements: name and nd.array value"""
-        _, data_img_name, label_img_name = self.f.readline().strip('\n').split("\t")
+        # _, data_img_name, label_img_name = self.f.readline().strip('\n').split("\t")
+        _, data_img_name, label_img_name = self.cached_table[self.cursor]
         data = {}
         label = {}
         data[self.data_name], label[self.label_name] = self._read_img(data_img_name, label_img_name)
@@ -106,8 +111,9 @@ class FileIter(DataIter):
 
     def reset(self):
         self.cursor = -1
-        self.f.close()
-        self.f = open(self.flist_name, 'r')
+        random.shuffle(self.cached_table)
+        # self.f.close()
+        # self.f = open(self.flist_name, 'r')
 
     def iter_next(self):
         self.cursor += 1
