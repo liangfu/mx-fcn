@@ -8,6 +8,10 @@ from PIL import Image
 import cv2
 import random
 
+from utils import getpallete
+palette = np.array(getpallete(256)).reshape((256,3))
+color2index = {tuple(p):idx for idx,p in enumerate(palette)} # (255, 255, 255) : 0,
+
 class FileIter(DataIter):
     """FileIter object in fcn-xs example. Taking a file list file to get dataiter.
     in this example, we use the whole image training for fcn-xs, that is to say
@@ -49,6 +53,29 @@ class FileIter(DataIter):
         self.cursor = -1
         self.data, self.label = self._read()
 
+        if True:
+            import cv2
+            lut_r = np.array(palette).astype(np.uint8).reshape((256,3))[:,0]
+            lut_g = np.array(palette).astype(np.uint8).reshape((256,3))[:,1]
+            lut_b = np.array(palette).astype(np.uint8).reshape((256,3))[:,2]
+            # print np.vstack((lut_r[:10],lut_g[:10],lut_b[:10]))
+            data  = {self.data_name:self.data[0][1], self.label_name:self.label[0][1]}
+            label_img = data[label_name].astype(np.uint8)
+            label_img = np.swapaxes(label_img, 1, 2)
+            label_img = np.swapaxes(label_img, 0, 2).astype(np.uint8)
+            label_img_r = cv2.LUT(label_img,lut_r)
+            label_img_g = cv2.LUT(label_img,lut_g)
+            label_img_b = cv2.LUT(label_img,lut_b)
+            label_img = cv2.merge((label_img_r,label_img_g,label_img_b))
+            img = np.squeeze(data[data_name])
+            img = (img + np.array([123.68, 116.779, 103.939]).reshape((3,1,1))).astype(np.uint8)
+            img = np.swapaxes(img, 1, 2)
+            img = np.swapaxes(img, 0, 2).astype(np.uint8)
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            displayimg = np.hstack((img,label_img))
+            # cv2.imshow('out_img',displayimg); [exit(0) if (cv2.waitKey(0)&0xff)==27 else None]
+
+        
     def _read(self):
         """get two list, each list contains two elements: name and nd.array value"""
         # _, data_img_name, label_img_name = self.f.readline().strip('\n').split("\t")
@@ -60,10 +87,18 @@ class FileIter(DataIter):
 
     def _read_img(self, img_name, label_name):
         img = Image.open(os.path.join(self.root_dir, img_name))
-        label = Image.open(os.path.join(self.root_dir, label_name))
-        assert img.size == label.size
+        # label = cv2.imread(os.path.join(self.root_dir, label_name),1) # color
+        label = cv2.imread(os.path.join(self.root_dir, label_name),0) # grayscale
+
+        # h, w, ch = label.shape
+        # label = map(lambda x:color2index[tuple(x)],label.reshape((h*w,ch)).tolist())
+        # label = np.array(label).reshape((h,w))
+        label = label.astype(np.float32)
+        # print label.shape
+        
+        # assert img.size == label.size
         img = np.array(img, dtype=np.float32)  # (h, w, c)
-        label = np.array(label)  # (h, w)
+        # label = np.array(label)  # (h, w)
         if self.cut_off_size is not None:
             max_hw = max(img.shape[0], img.shape[1])
             min_hw = min(img.shape[0], img.shape[1])
@@ -107,7 +142,7 @@ class FileIter(DataIter):
         return [(k, tuple([1] + list(v.shape[1:]))) for k, v in self.label]
 
     def get_batch_size(self):
-        return 32
+        return 1
 
     def reset(self):
         self.cursor = -1

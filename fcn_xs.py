@@ -22,16 +22,20 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 ctx = mx.gpu(0)
+numclass = 21
+root_dir = './VOC2012'
+# numclass = 6
+# root_dir = './StreetScenes'
 
 def main():
-    fcnxs = symbol_fcnxs_resnet.get_fcn32s_symbol(numclass=21, workspace_default=1024)
+    fcnxs = symbol_fcnxs_resnet.get_fcn32s_symbol(numclass=numclass, workspace_default=1024)
     # pprint(fcnxs.list_arguments())
     fcnxs_model_prefix = os.path.join("models","FCN32s_ResNet")
     if args.model == "fcn16s":
-        fcnxs = symbol_fcnxs_resnet.get_fcn16s_symbol(numclass=21, workspace_default=1024)
+        fcnxs = symbol_fcnxs_resnet.get_fcn16s_symbol(numclass=numclass, workspace_default=1024)
         fcnxs_model_prefix = os.path.join("models","FCN16s_ResNet")
     elif args.model == "fcn8s":
-        fcnxs = symbol_fcnxs_resnet.get_fcn8s_symbol(numclass=21, workspace_default=1024)
+        fcnxs = symbol_fcnxs_resnet.get_fcn8s_symbol(numclass=numclass, workspace_default=1024)
         fcnxs_model_prefix = os.path.join("models","FCN8s_ResNet")
     arg_names = fcnxs.list_arguments()
     _, fcnxs_args, fcnxs_auxs = mx.model.load_checkpoint(args.prefix, args.epoch)
@@ -43,13 +47,13 @@ def main():
         elif args.init_type == "fcnxs":
             fcnxs_args, fcnxs_auxs = init_fcnxs.init_from_fcnxs(ctx, fcnxs, fcnxs_args, fcnxs_auxs)
     train_dataiter = FileIter(
-        root_dir             = "./VOC2012",
+        root_dir             = root_dir,
         flist_name           = "train.lst",
         # cut_off_size         = 400,
         rgb_mean             = (123.68, 116.779, 103.939),
         )
     val_dataiter = FileIter(
-        root_dir             = "./VOC2012",
+        root_dir             = root_dir,
         flist_name           = "val.lst",
         rgb_mean             = (123.68, 116.779, 103.939),
         )
@@ -66,11 +70,11 @@ def main():
         ctx                 = ctx,
         symbol              = fcnxs,
         begin_epoch         = args.epoch if args.retrain else 0,
-        num_epoch           = 50, # 50 epoch
+        num_epoch           = 48, # 50 epoch
         arg_params          = fcnxs_args,
         aux_params          = fcnxs_auxs,
-        learning_rate       = 1e-3, # 1e-5
-        momentum            = 0.99,  # 0.99
+        learning_rate       = 1e-4, # 1e-5
+        momentum            = 0.9,  # 0.99
         wd                  = 0.0005) # 0.0005
     model.fit(
         train_data          = train_dataiter,
