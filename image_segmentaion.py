@@ -44,8 +44,8 @@ index2color = {idx:p.tolist() for idx,p in enumerate(palette)} # (255, 255, 255)
 # img = "./000065.jpg"
 img = "./001311.jpg"
 segfile = img.replace("jpg", "png")
-model_prefix = "models/FCN32s_ResNet"
-epoch = 26
+model_prefix = "models/FCN8s_ResNet_VOC2012"
+epoch = 7
 ctx = mx.gpu(0)
 
 def get_data(img_path):

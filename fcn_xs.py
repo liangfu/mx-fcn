@@ -22,21 +22,21 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 ctx = mx.gpu(0)
-numclass = 21
-root_dir = './VOC2012'
-# numclass = 6
-# root_dir = './StreetScenes'
+# numclass = 21
+# root_dir = 'VOC2012'
+numclass = 6
+root_dir = 'StreetScenes'
 
 def main():
     fcnxs = symbol_fcnxs_resnet.get_fcn32s_symbol(numclass=numclass, workspace_default=1024)
     # pprint(fcnxs.list_arguments())
-    fcnxs_model_prefix = os.path.join("models","FCN32s_ResNet")
+    fcnxs_model_prefix = os.path.join("models","FCN32s_ResNet_"+root_dir)
     if args.model == "fcn16s":
         fcnxs = symbol_fcnxs_resnet.get_fcn16s_symbol(numclass=numclass, workspace_default=1024)
-        fcnxs_model_prefix = os.path.join("models","FCN16s_ResNet")
+        fcnxs_model_prefix = os.path.join("models","FCN16s_ResNet_"+root_dir)
     elif args.model == "fcn8s":
         fcnxs = symbol_fcnxs_resnet.get_fcn8s_symbol(numclass=numclass, workspace_default=1024)
-        fcnxs_model_prefix = os.path.join("models","FCN8s_ResNet")
+        fcnxs_model_prefix = os.path.join("models","FCN8s_ResNet_"+root_dir)
     arg_names = fcnxs.list_arguments()
     _, fcnxs_args, fcnxs_auxs = mx.model.load_checkpoint(args.prefix, args.epoch)
     if not args.retrain:

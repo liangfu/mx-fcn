@@ -24,6 +24,8 @@ def lm2mask(xmlname,segfile):
     objects = {}
     for elem in elems:
         name = filter(lambda e:e.tag=='name',elem)[0].text.split()[0]
+        deleted = int(filter(lambda e:e.tag=='deleted',elem)[0].text.split()[0])
+        if deleted: continue
         polygon = filter(lambda e:e.tag=='polygon',elem)[0]
         points = polygon.findall("pt")
         pts = map(lambda p:[int(p[0].text.split()[0]),int(p[1].text.split()[0])],points)
