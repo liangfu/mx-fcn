@@ -206,12 +206,9 @@ class Solver(object):
                     cpu_output_array = mx.nd.zeros(self.executor.outputs[0].shape)
                     self.executor.forward(is_train=False)
                     self.executor.outputs[0].copyto(cpu_output_array)
-                    # pred_shape = cpu_output_array.shape
                     pred_shape = self.executor.outputs[0].shape
                     label = mx.nd.array(data[label_name].reshape(label_shape[0], \
                         label_shape[1]*label_shape[2]))
-                    # pred = mx.nd.array(cpu_output_array.asnumpy().reshape(pred_shape[0], \
-                    #     pred_shape[1], pred_shape[2]*pred_shape[3]))
                     self.executor.outputs[0].wait_to_read()
 
                     ##### display results
@@ -221,8 +218,6 @@ class Solver(object):
                     display_results(out_img,label_img,img)
                     outimgiter += 1
 
-                    # pred = mx.nd.array(self.executor.outputs[0].asnumpy().reshape(pred_shape[0], \
-                    #     pred_shape[1], pred_shape[2]*pred_shape[3]))
                     pred = mx.nd.array(self.executor.outputs[0].asnumpy().reshape(pred_shape[0], \
                         pred_shape[1], pred_shape[2]*pred_shape[3]))
                     eval_metric.update([label], [pred])

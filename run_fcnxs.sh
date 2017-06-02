@@ -14,5 +14,5 @@ dataset=StreetScenes
 ## train fcn-8s model
 # python -u fcn_xs.py --model=fcn8s --prefix=models/FCN16s_VGG16 --epoch=27 --init-type=fcnxs
 # python -u fcn_xs.py --model=fcn8s --prefix=models/FCN16s_ResNet_$dataset --epoch=28 --init-type=fcnxs
-python -u fcn_xs.py --model=fcn8s --prefix=models/FCN8s_ResNet_$dataset --epoch=8 --init-type=fcnxs --retrain
+python -u fcn_xs.py --model=fcn8s --prefix=models/FCN8s_ResNet_$dataset --epoch=24 --init-type=fcnxs --retrain
 
