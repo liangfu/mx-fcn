@@ -64,7 +64,11 @@ def init_from_resnet(ctx, fcnxs_symbol, resnet_args, resnet_auxs):
     # pprint(dict(zip(arg_names,arg_shapes)))
     rest_params = dict([(x[0], mx.nd.zeros(x[1], ctx)) for x in zip(arg_names, arg_shapes)
             if x[0] in ['score_weight', 'score_bias', 'score_pool4_weight', 'score_pool4_bias', \
-                        'score_pool3_weight', 'score_pool3_bias']])
+                        'score_pool3_weight', 'score_pool3_bias', \
+                        'score_fused_bn_beta', 'score_fused_bn_bias']])
+    fcnxs_args.update(rest_params)
+    rest_params = dict([(x[0], mx.nd.ones(x[1], ctx)) for x in zip(arg_names, arg_shapes)
+                        if x[0] in ['score_fused_bn_gamma']])
     fcnxs_args.update(rest_params)
     deconv_params = dict([(x[0], x[1]) for x in zip(arg_names, arg_shapes)
             if x[0] in ["bigscore_weight", 'score2_weight', 'score4_weight']])
@@ -104,9 +108,12 @@ def init_from_fcnxs(ctx, fcnxs_symbol, fcnxs_args_from, fcnxs_auxs_from):
     # this is fcn16s init from fcn32s
     elif 'score_pool4_weight' in arg_names:
         rest_params = dict([(x[0], mx.nd.zeros(x[1], ctx)) for x in zip(arg_names, arg_shapes)
-            if x[0] in ['score_pool4_weight', 'score_pool4_bias']])
-        deconv_params = dict([(x[0], x[1]) for x in zip(arg_names, arg_shapes) if x[0] \
-            in ["bigscore_weight", 'score2_weight']])
+            if x[0] in ['score_pool4_weight', 'score_pool4_bias',
+                        'score_bn_bias', 'score_bn_beta', 'res4_bn_bias', 'res4_bn_beta']] +
+                           [(x[0], mx.nd.ones(x[1], ctx)) for x in zip(arg_names, arg_shapes)
+            if x[0] in ['score_bn_gamma', 'res4_bn_gamma']])
+        deconv_params = dict([(x[0], x[1]) for x in zip(arg_names, arg_shapes)
+            if x[0] in ["bigscore_weight", 'score2_weight']])
     # this is fcn32s init
     else:
         logging.error("you are init the fcn32s model, so you should use init_from_vgg16()")

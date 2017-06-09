@@ -212,11 +212,11 @@ class Solver(object):
                     self.executor.outputs[0].wait_to_read()
 
                     ##### display results
-                    out_img = np.squeeze(self.executor.outputs[0].asnumpy().argmax(axis=1).astype(np.uint8))
-                    label_img = data[label_name].astype(np.uint8)
-                    img = np.squeeze(data[data_name])
-                    display_results(out_img,label_img,img)
-                    outimgiter += 1
+                    # out_img = np.squeeze(self.executor.outputs[0].asnumpy().argmax(axis=1).astype(np.uint8))
+                    # label_img = data[label_name].astype(np.uint8)
+                    # img = np.squeeze(data[data_name])
+                    # display_results(out_img,label_img,img)
+                    # outimgiter += 1
 
                     pred = mx.nd.array(self.executor.outputs[0].asnumpy().reshape(pred_shape[0], \
                         pred_shape[1], pred_shape[2]*pred_shape[3]))

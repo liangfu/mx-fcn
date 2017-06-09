@@ -22,10 +22,10 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 ctx = mx.gpu(0)
-# numclass = 21
-# root_dir = 'VOC2012'
-numclass = 6
-root_dir = 'StreetScenes'
+numclass = 21
+root_dir = 'VOC2012'
+# numclass = 6
+# root_dir = 'StreetScenes'
 
 def main():
     fcnxs = symbol_fcnxs_resnet.get_fcn32s_symbol(numclass=numclass, workspace_default=1024)
@@ -63,17 +63,17 @@ def main():
     # pprint(fcnxs_auxs)
 
     # network visualization
-    # dot = mx.viz.plot_network(fcnxs, shape={'data':(1,3,500,500)})
+    # dot = mx.viz.plot_network(fcnxs, shape={'data':(1,3,224,224)})
     # dot.view()
 
     model = Solver(
         ctx                 = ctx,
         symbol              = fcnxs,
         begin_epoch         = args.epoch if args.retrain else 0,
-        num_epoch           = 48, # 50 epoch
+        num_epoch           = 30, # 50 epoch
         arg_params          = fcnxs_args,
         aux_params          = fcnxs_auxs,
-        learning_rate       = 1e-4, # 1e-5
+        learning_rate       = 1e-5, # 1e-5
         momentum            = 0.9,  # 0.99
         wd                  = 0.0005) # 0.0005
     model.fit(

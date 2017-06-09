@@ -38,23 +38,30 @@ index2color = {idx:p.tolist() for idx,p in enumerate(palette)} # (255, 255, 255)
 
 # print index2color
 
-# img = "./person_bicycle.jpg"
-# img = "./000129.jpg"
-# img = "./003546.jpg"
-img = "./000065.jpg"
-# img = "./001311.jpg"
-segfile = img.replace("jpg", "png")
-model_prefix = "models/FCN8s_ResNet_StreetScenes"
-epoch = 24
+# imgname = "./person_bicycle.jpg"
+# imgname = "./000129.jpg"
+imgname = "./000143.jpg"
+# imgname = "./003546.jpg"
+imgname = "./000065.jpg"
+imgname = "./000058.jpg"
+# imgname = "./001311.jpg"
+# imgname = "./2011_003240.jpg"
+model_prefix = "models/FCN8s_ResNet_VOC2012"
+epoch = 10
 ctx = mx.gpu(0)
 
 def get_data(img_path):
     """get the (1, 3, h, w) np.array data for the img_path"""
     mean = np.array([123.68, 116.779, 103.939])  # (R,G,B)
-    img = np.array(Image.open(img_path), dtype=np.float32)
-    print img[:2,:2,:]
-    # img = cv2.cvtColor(cv2.imread(img_path),cv2.COLOR_BGR2RGB).astype(np.float32)
+    # img = np.array(Image.open(img_path), dtype=np.float32)
     # print img[:2,:2,:]
+    img = cv2.cvtColor(cv2.imread(img_path),cv2.COLOR_BGR2RGB)
+    # print img[:2,:2,:]
+
+    # img = cv2.resize(img, (640, 480)).astype(np.float32)
+    # cv2.imshow("img", img)
+    # cv2.waitKey()
+    
     reshaped_mean = mean.reshape(1, 1, 3)
     img = img - reshaped_mean
     img = np.swapaxes(img, 0, 2)
@@ -68,7 +75,12 @@ def main():
     fcnxs_auxs = {key: val.as_in_context(ctx) for key, val in fcnxs_auxs.items()}
     # pprint(fcnxs_args)
     # pprint(fcnxs_auxs)
-    fcnxs_args["data"] = mx.nd.array(get_data(img), ctx)
+
+    # for imgidx in range(1,21):
+    #     imgname = "/home/liangfu/workspace/mx-rcnn/data/JPEGImages/%06d.jpg" % (imgidx,)
+
+    segfile = imgname.replace("jpg", "png")
+    fcnxs_args["data"] = mx.nd.array(get_data(imgname), ctx)
     data_shape = fcnxs_args["data"].shape
     label_shape = (1, data_shape[2]*data_shape[3])
     fcnxs_args["softmax_label"] = mx.nd.empty(label_shape, ctx)
@@ -76,27 +88,15 @@ def main():
     tic = time.time()
     exector.forward(is_train=False)
     output = exector.outputs[0].asnumpy()
-    print output.shape
     out_img = np.squeeze(output.argmax(axis=1).astype(np.uint8))
-    print out_img
-    print 'elapsed: %.0f ms' % (1000.*(time.time()-tic),)
-
+    print('result wrote to %s' % (segfile,)),
+    print('elapsed: %.0f ms' % (1000.*(time.time()-tic),))
     h, w = out_img.shape
     out_img = map(lambda x:index2color[x[0]],out_img.reshape((h*w,1)).tolist())
     out_img = np.array(out_img).reshape((h,w,3)).astype(np.uint8)
     out_img = cv2.cvtColor(out_img, cv2.COLOR_BGR2RGB)
+    # out_img = cv2.resize(out_img, (800, 600), interpolation=cv2.INTER_NEAREST)
     cv2.imwrite(segfile,out_img)
-    
-    # out_img = Image.fromarray(out_img)
-    # print out_img
-    # out_img.putpalette(palette)
-    # out_img.save(segfile)
-
-    # print index2color
-    # h, w = out_img.shape
-    # print out_img.reshape((h*w,)).tolist()
-    # out_img = map(lambda x:index2color[x],out_img.reshape((h*w,)).tolist())
-    # out_img = np.array(out_img).reshape((h,w,3))
 
 
 if __name__ == "__main__":
