@@ -173,7 +173,7 @@ class Solver(object):
                 eval_metric.update([label], [pred])
                 self.executor.outputs[0].wait_to_read()
 
-                ##### display results
+                ###### display results ######
                 # out_img = np.squeeze(self.executor.outputs[0].asnumpy().argmax(axis=1).astype(np.uint8))
                 # label_img = data[label_name].astype(np.uint8)
                 # img = np.squeeze(data[data_name])

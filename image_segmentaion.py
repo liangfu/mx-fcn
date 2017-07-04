@@ -40,14 +40,15 @@ index2color = {idx:p.tolist() for idx,p in enumerate(palette)} # (255, 255, 255)
 
 # imgname = "./person_bicycle.jpg"
 # imgname = "./000129.jpg"
-imgname = "./000143.jpg"
+# imgname = "./000143.jpg"
 # imgname = "./003546.jpg"
-imgname = "./000065.jpg"
-imgname = "./000058.jpg"
+imgname = "./000034_resized.jpg"
+# imgname = "./000065.jpg"
+# imgname = "./000058.jpg"
 # imgname = "./001311.jpg"
 # imgname = "./2011_003240.jpg"
-model_prefix = "models/FCN8s_ResNet_VOC2012"
-epoch = 10
+model_prefix = "models/FCN32s_ResNet_Cityscapes"
+epoch = 5
 ctx = mx.gpu(0)
 
 def get_data(img_path):
@@ -84,10 +85,26 @@ def main():
     data_shape = fcnxs_args["data"].shape
     label_shape = (1, data_shape[2]*data_shape[3])
     fcnxs_args["softmax_label"] = mx.nd.empty(label_shape, ctx)
-    exector = fcnxs.bind(ctx, fcnxs_args ,args_grad=None, grad_req="null", aux_states=fcnxs_auxs, group2ctx={'gpu(0)':mx.gpu(0),})
+    executor = fcnxs.bind(ctx, fcnxs_args ,args_grad=None, grad_req="null", aux_states=fcnxs_auxs, group2ctx={'gpu(0)':mx.gpu(0),})
+
+    def stat_helper(name, array):
+        """wrapper for executor callback"""
+        import ctypes
+        from mxnet.ndarray import NDArray
+        from mxnet.base import NDArrayHandle, py_str
+        array = ctypes.cast(array, NDArrayHandle)
+        array = NDArray(array, writable=False)
+        array.wait_to_read()
+        elapsed = float(time.time()-stat_helper.start_time)*1000.
+        if elapsed>1.:
+            print (name, array.shape, ('%.1fms' % (elapsed,)))
+        stat_helper.start_time=time.time()
+    stat_helper.start_time=float(time.time())
+    executor.set_monitor_callback(stat_helper)
+
     tic = time.time()
-    exector.forward(is_train=False)
-    output = exector.outputs[0].asnumpy()
+    executor.forward(is_train=False)
+    output = executor.outputs[0].asnumpy()
     out_img = np.squeeze(output.argmax(axis=1).astype(np.uint8))
     print('result wrote to %s' % (segfile,)),
     print('elapsed: %.0f ms' % (1000.*(time.time()-tic),))

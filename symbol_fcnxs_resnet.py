@@ -254,8 +254,8 @@ def resnet_score(_input, numclass, workspace_default=1024):
     # score = mx.symbol.Convolution(data=_input, kernel=(1, 1), num_filter=numclass,
     #             workspace=workspace_default, name="score")
 
-    conv_feat_act = mx.sym.Activation(data=_input, act_type='relu', name='conv_feat_relu')
-    score = mx.symbol.Convolution(data=conv_feat_act, kernel=(1, 1), num_filter=numclass,
+    # conv_feat_act = mx.sym.Activation(data=_input, act_type='relu', name='conv_feat_relu')
+    score = mx.symbol.Convolution(data=_input, kernel=(3, 3), pad=(1, 1), num_filter=numclass,
                 workspace=workspace_default, name="score")
     return score
 

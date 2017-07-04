@@ -22,8 +22,10 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 ctx = mx.gpu(0)
-numclass = 21
-root_dir = 'VOC2012'
+numclass = 30
+root_dir = 'Cityscapes'
+# numclass = 21
+# root_dir = 'VOC2012'
 # numclass = 6
 # root_dir = 'StreetScenes'
 
@@ -39,6 +41,8 @@ def main():
         fcnxs_model_prefix = os.path.join("models","FCN8s_ResNet_"+root_dir)
     arg_names = fcnxs.list_arguments()
     _, fcnxs_args, fcnxs_auxs = mx.model.load_checkpoint(args.prefix, args.epoch)
+    # mx.model.save_checkpoint(args.prefix,args.epoch,_,fcnxs_args,fcnxs_auxs)
+    # exit(0) # update symbol and parameter file version ...
     if not args.retrain:
         if args.init_type == "vgg16":
             fcnxs_args, fcnxs_auxs = init_fcnxs.init_from_vgg16(ctx, fcnxs, fcnxs_args, fcnxs_auxs)
@@ -73,7 +77,7 @@ def main():
         num_epoch           = 30, # 50 epoch
         arg_params          = fcnxs_args,
         aux_params          = fcnxs_auxs,
-        learning_rate       = 1e-5, # 1e-5
+        learning_rate       = args.lr, # 1e-5
         momentum            = 0.9,  # 0.99
         wd                  = 0.0005) # 0.0005
     model.fit(
@@ -90,6 +94,8 @@ if __name__ == "__main__":
         help='The prefix(include path) of resnet model with mxnet format.')
     parser.add_argument('--epoch', type=int, default=0,
         help='The epoch number of vgg16 model.')
+    parser.add_argument('--lr', type=float, default=1e-5,
+        help='The learning rate of current training.')
     parser.add_argument('--init-type', default="resnet",
           help='the init type of fcn-xs model, e.g. resnet, vgg16, fcnxs')
     parser.add_argument('--retrain', action='store_true', default=False,
