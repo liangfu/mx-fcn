@@ -10,6 +10,7 @@ from data import FileIter
 from solver import Solver
 from pprint import pprint
 import time
+from mxnet.io import PrefetchingIter
 
 # os.environ['MXNET_ENGINE_TYPE']='NaiveEngine' # enable native code debugging
 
@@ -74,7 +75,7 @@ def main():
         ctx                 = ctx,
         symbol              = fcnxs,
         begin_epoch         = args.epoch if args.retrain else 0,
-        num_epoch           = 30, # 50 epoch
+        num_epoch           = 20, # 50 epoch
         arg_params          = fcnxs_args,
         aux_params          = fcnxs_auxs,
         learning_rate       = args.lr, # 1e-5

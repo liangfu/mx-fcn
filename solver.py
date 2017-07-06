@@ -38,6 +38,7 @@ def display_results(out_img,label_img,img):
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     print(out_img.shape,label_img.shape,img.shape)
     h, w, ch = img.shape
+    print "img.shape,label_img.shape,out_img.shape",img.shape,label_img.shape,out_img.shape
     displayimg = cv2.resize(np.hstack((img,label_img,out_img)),(int(w*3*.8),int(h*.8)))
     cv2.imshow('out_img',displayimg); [exit(0) if (cv2.waitKey(0)&0xff)==27 else None]
     cv2.imwrite('tmp/out_img_%03d.png'%(outimgiter,),displayimg);
@@ -84,8 +85,10 @@ class Solver(object):
             self.grad_params = None
         aux_names = self.symbol.list_auxiliary_states()
         self.aux_params = {k : mx.nd.zeros(s, self.ctx) for k, s in zip(aux_names, aux_shapes)}
-        data_name = train_data.data_name
-        label_name = train_data.label_name
+        # data_name = train_data.data_name
+        # label_name = train_data.label_name
+        data_name = train_data.provide_data[0][0]
+        label_name = train_data.provide_label[0][0]
         input_names = [data_name, label_name]
 
         # if True:
@@ -112,7 +115,8 @@ class Solver(object):
         #         displayimg = np.hstack((img,label_img))
         #         cv2.imshow('out_img',displayimg); [exit(0) if (cv2.waitKey(0)&0xff)==27 else None]
         
-        self.optimizer = opt.create(self.optimizer, rescale_grad=(1.0/train_data.get_batch_size()), **(self.kwargs))
+        # self.optimizer = opt.create(self.optimizer, rescale_grad=(1.0/train_data.get_batch_size()), **(self.kwargs))
+        self.optimizer = opt.create(self.optimizer, rescale_grad=(1.0/2.), **(self.kwargs))
         self.updater = get_updater(self.optimizer)
         eval_metric = metric.create(eval_metric)
         # begin training
@@ -174,10 +178,12 @@ class Solver(object):
                 self.executor.outputs[0].wait_to_read()
 
                 ###### display results ######
-                # out_img = np.squeeze(self.executor.outputs[0].asnumpy().argmax(axis=1).astype(np.uint8))
-                # label_img = data[label_name].astype(np.uint8)
-                # img = np.squeeze(data[data_name])
-                # display_results(out_img,label_img,img)
+                # out_img = self.executor.outputs[0].asnumpy()
+                # for imgidx in range(out_img.shape[0]):
+                #     res_img = np.squeeze(out_img[imgidx,:,:,:].argmax(axis=0).astype(np.uint8))
+                #     label_img = data[label_name][imgidx,:,:].astype(np.uint8)
+                #     img = np.squeeze(data[data_name][imgidx,:,:,:])
+                #     display_results(res_img,np.expand_dims(label_img,axis=0),img)
                 # outimgiter += 1
 
                 batch_end_params = BatchEndParam(epoch=epoch, nbatch=nbatch, eval_metric=eval_metric)
