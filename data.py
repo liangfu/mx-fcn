@@ -44,7 +44,7 @@ class FileIter(DataIter):
         the label name used in symbol softmax_label(default label name)
     """
     def __init__(self, root_dir, flist_name,
-                 batch_size = 2, 
+                 batch_size = 1, 
                  rgb_mean = (117, 117, 117),
                  cut_off_size = None,
                  data_name = "data",
@@ -64,7 +64,7 @@ class FileIter(DataIter):
         fp.close()
 
         self._current = 0
-        self._index = np.arange(self.num_data)
+        self._index = np.arange(self.num_data*2)
         np.random.seed(55)
         np.random.shuffle(self._index)
 
@@ -109,8 +109,11 @@ class FileIter(DataIter):
     def _read(self):
         """get two list, each list contains two elements: name and nd.array value"""
         # load first frame and get data shape
-        _, data_img_name, label_img_name = self.cached_table[self._index[self._current]]
-        data_img, label_img = self._read_img(data_img_name, label_img_name)
+        imgidx = self._index[self._current]
+        isflip = imgidx >= self.num_data
+        imgidx = imgidx % self.num_data
+        _, data_img_name, label_img_name = self.cached_table[imgidx]
+        data_img, label_img = self._read_img(data_img_name, label_img_name, isflip)
         self._current += 1
 
         # initialize data and label shape, and put loaded data
@@ -126,8 +129,12 @@ class FileIter(DataIter):
         # generate batch data
         for i in range(1,self._batch_size):
             # sys.stderr.write(str(label_img.shape)+"\n")
-            _, data_img_name, label_img_name = self.cached_table[self._index[self._current]]
-            data_img, label_img = self._read_img(data_img_name, label_img_name)
+            imgidx = self._index[self._current]
+            isflip = imgidx >= self.num_data
+            imgidx = imgidx % self.num_data
+            # print imgidx, isflip
+            _, data_img_name, label_img_name = self.cached_table[imgidx]
+            data_img, label_img = self._read_img(data_img_name, label_img_name, isflip)
             data[self.data_name][i,:,:,:]= np.expand_dims(data_img, axis=0)
             label[self.label_name][i,:,:]= label_img # np.expand_dims(label_img, axis=0)
             self._current += 1
@@ -135,13 +142,17 @@ class FileIter(DataIter):
         # return list(data.items()), list(label.items())
         return data,label
 
-    def _read_img(self, img_name, label_name):
+    def _read_img(self, img_name, label_name, isflip=False):
         # img = Image.open(os.path.join(self.root_dir, img_name))
         img = cv2.imread(os.path.join(self.root_dir, img_name),1)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         # label = cv2.imread(os.path.join(self.root_dir, label_name),1) # color
         label = cv2.imread(os.path.join(self.root_dir, label_name),0) # grayscale
 
+        if isflip:
+            img = cv2.flip(img, 1) # left to right flip
+            label = cv2.flip(label, 1)
+        
         # h, w, ch = label.shape
         # label = map(lambda x:color2index[tuple(x)],label.reshape((h*w,ch)).tolist())
         # label = np.array(label).reshape((h,w))
@@ -188,7 +199,7 @@ class FileIter(DataIter):
         # self.f = open(self.flist_name, 'r')
 
     def iter_next(self):
-        return self._current+self._batch_size < self.num_data
+        return (self._current+self._batch_size) < (self.num_data*2)
 
     def next(self):
         """return one dict which contains "data" and "label" """

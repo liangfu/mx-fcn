@@ -115,8 +115,7 @@ class Solver(object):
         #         displayimg = np.hstack((img,label_img))
         #         cv2.imshow('out_img',displayimg); [exit(0) if (cv2.waitKey(0)&0xff)==27 else None]
         
-        # self.optimizer = opt.create(self.optimizer, rescale_grad=(1.0/train_data.get_batch_size()), **(self.kwargs))
-        self.optimizer = opt.create(self.optimizer, rescale_grad=(1.0/2.), **(self.kwargs))
+        self.optimizer = opt.create(self.optimizer, rescale_grad=(1.0/train_data.get_batch_size()), **(self.kwargs))
         self.updater = get_updater(self.optimizer)
         eval_metric = metric.create(eval_metric)
         # begin training

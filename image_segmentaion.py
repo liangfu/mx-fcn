@@ -98,7 +98,7 @@ def main():
         elapsed = float(time.time()-stat_helper.start_time)*1000.
         if elapsed>1.:
             print (name, array.shape, ('%.1fms' % (elapsed,)))
-        stat_helper.start_time=time.time()
+        # stat_helper.start_time=time.time()
     stat_helper.start_time=float(time.time())
     executor.set_monitor_callback(stat_helper)
 
