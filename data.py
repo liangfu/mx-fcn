@@ -20,6 +20,8 @@ import cv2
 from mxnet.image import ImageIter
 import time
 from utils import getpallete
+import threading
+
 palette = np.array(getpallete(256)).reshape((256,3))
 color2index = {tuple(p):idx for idx,p in enumerate(palette)} # (255, 255, 255) : 0,
 
@@ -44,7 +46,7 @@ class FileIter(DataIter):
         the label name used in symbol softmax_label(default label name)
     """
     def __init__(self, root_dir, flist_name,
-                 batch_size = 1, 
+                 batch_size = 2, 
                  rgb_mean = (117, 117, 117),
                  cut_off_size = None,
                  data_name = "data",
@@ -72,7 +74,13 @@ class FileIter(DataIter):
         # self.f = None
         # self.cursor = -1
         tic = time.time()
-        self.data, self.label = self._read()
+        # self.data, self.label = self._read()
+
+        self._thread = None
+        self._curr_batch = None
+        self.data = self.label = None, None
+        self._read()
+        self._curr_batch = self.data, self.label
         # print 'elapsed: %.0fms' % ((time.time()-tic)*1000.,)
         # print self.data[self.data_name].shape,self.label[self.label_name].shape
         # self._display()
@@ -83,11 +91,11 @@ class FileIter(DataIter):
         lut_r = np.array(palette).astype(np.uint8).reshape((256,3))[:,0]
         lut_g = np.array(palette).astype(np.uint8).reshape((256,3))[:,1]
         lut_b = np.array(palette).astype(np.uint8).reshape((256,3))[:,2]
-        for i in range(self.data[self.data_name].shape[0]):
+        for i in range(self._curr_batch[0][self.data_name].shape[0]):
             # data  = {self.data_name:self.data[0][1], self.label_name:self.label[0][1]}
             # sys.stderr.write(str(i)+"\n")
-            data  = {self.data_name:self.data[self.data_name][i,:,:,:],
-                     self.label_name:np.expand_dims(self.label[self.label_name][i,:,:],axis=0)}
+            data  = {self.data_name:self._curr_batch[0][self.data_name][i,:,:,:],
+                     self.label_name:np.expand_dims(self._curr_batch[1][self.label_name][i,:,:],axis=0)}
             label_img = data[self.label_name].astype(np.uint8)
             label_img = np.swapaxes(label_img, 1, 2)
             label_img = np.swapaxes(label_img, 0, 2).astype(np.uint8)
@@ -104,7 +112,14 @@ class FileIter(DataIter):
             cv2.imshow('out_img',displayimg); [exit(0) if (cv2.waitKey(0)&0xff)==27 else None]
 
     def _fetch_next(self):
-        pass
+        """wait for previous thread to join, launch new thread, 
+        and return data batch generated from previous fetching thread."""
+        if self._thread is not None:
+            if self._thread.is_alive():
+                self._thread.join()
+        self._curr_batch = self.data, self.label
+        self._thread = threading.Thread(target=self._read)
+        self._thread.start()
             
     def _read(self):
         """get two list, each list contains two elements: name and nd.array value"""
@@ -139,8 +154,9 @@ class FileIter(DataIter):
             label[self.label_name][i,:,:]= label_img # np.expand_dims(label_img, axis=0)
             self._current += 1
 
+        self.data, self.label = data, label
         # return list(data.items()), list(label.items())
-        return data,label
+        # return data,label
 
     def _read_img(self, img_name, label_name, isflip=False):
         # img = Image.open(os.path.join(self.root_dir, img_name))
@@ -179,13 +195,13 @@ class FileIter(DataIter):
     def provide_data(self):
         """The name and shape of data provided by this iterator"""
         # return [(k, tuple([self._batch_size] + list(v.shape[1:]))) for k, v in self.data]
-        return [(k, v.shape) for k, v in zip(self.data.keys(),self.data.values())]
+        return [(k, v.shape) for k, v in zip(self._curr_batch[0].keys(),self._curr_batch[0].values())]
 
     @property
     def provide_label(self):
         """The name and shape of label provided by this iterator"""
         # return [(k, tuple([self._batch_size] + list(v.shape[1:]))) for k, v in self.label]
-        return [(k, v.shape) for k, v in zip(self.label.keys(),self.label.values())]
+        return [(k, v.shape) for k, v in zip(self._curr_batch[1].keys(),self._curr_batch[1].values())]
 
     def get_batch_size(self):
         return self._batch_size
@@ -204,13 +220,19 @@ class FileIter(DataIter):
     def next(self):
         """return one dict which contains "data" and "label" """
         if self.iter_next():
-            self.data, self.label = self._read()
+            # self.data, self.label = self._read()
+            self._fetch_next()
+
+            # self._read()
+            # self._curr_batch = self.data, self.label
+            
+            # self.data, self.label = self._curr_batch
             # uncomment the following lines to visualize `data` and `label`
             # cv2.imshow('softmax_label',np.squeeze(self.label[0][1],axis=(0,)).astype(np.uint8))
             # cv2.imshow('data',np.squeeze(self.data[0][1],axis=(0,)).astype(np.uint8))
             # if (cv2.waitKey()&0xff)==27: exit(0)
-            return {self.data_name  :  self.data[self.data_name],
-                    self.label_name :  self.label[self.label_name]}
+            return {self.data_name  :  self._curr_batch[0][self.data_name],
+                    self.label_name :  self._curr_batch[1][self.label_name]}
         else:
             raise StopIteration
 
